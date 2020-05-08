@@ -747,7 +747,16 @@ def populate_birthdays_calendar(birthdays):
         year = cur_date.year if birthday.month >= cur_date.month else (cur_date + relativedelta(years=1)).year
         month = '{:02d}'.format(birthday.month)
         day = '{:02d}'.format(birthday.day)
-        e.begin = f'{year}-{month}-{day} 00:00:00'
+        try:
+            e.begin = f'{year}-{month}-{day} 00:00:00'
+        except ValueError as err:
+            # Check if this is due to leap year. If so, move to Feb 28.
+            if birthday.month == 2 and birthday.day == 29:
+                day = '{:02d}'.format(birthday.day - 1)
+                logger.warning(f"{birthday.name}'s birthday landed on a missing leap day. Moving 1 day earlier ({year}-{month}-{day}) instead.")
+                e.begin = f'{year}-{month}-{day} 00:00:00'
+            else:
+                raise err
         e.make_all_day()
         e.duration = timedelta(days=1)
         e.extra.append(ContentLine(name='RRULE', value='FREQ=YEARLY'))
